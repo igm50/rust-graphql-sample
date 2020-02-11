@@ -16,6 +16,11 @@ impl Connection {
   fn init_table(&self) {
     self
       .pool
+      .prep_exec(r"CREATE SCHEMA IF NOT EXISTS todo", ())
+      .unwrap();
+
+    self
+      .pool
       .prep_exec(r"DROP TABLE IF EXISTS todo.todos", ())
       .unwrap();
 
