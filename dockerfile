@@ -1,11 +1,15 @@
-FROM rust:1.41
+FROM rust:1.41-buster
 
 WORKDIR /usr/src/app
 
-RUN rustup default nightly \
-  && rustup override set nightly \
-  && cargo install sccache
+RUN USER=root cargo init --bin
 
-ENV RUSTC_WRAPPER=/usr/local/cargo/bin/sccache
+ENV CARGO_TARGET_DIR=/tmp/target
+
+COPY ./Cargo.toml Cargo.toml
+COPY ./Cargo.lock Cargo.lock
+
+RUN cargo build \
+  && rm src/main.rs
 
 EXPOSE 8000
