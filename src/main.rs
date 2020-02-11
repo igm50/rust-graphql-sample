@@ -1,5 +1,3 @@
-extern crate http;
-
 mod controller;
 
 use actix_web::{web, App, HttpServer};
