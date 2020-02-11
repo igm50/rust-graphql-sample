@@ -8,8 +8,8 @@ use actix_web::{web, App, HttpServer};
 async fn main() -> std::io::Result<()> {
   HttpServer::new(|| {
     App::new()
-      .route("/", web::get().to(controller::hello))
-      .route("/health", web::get().to(controller::health))
+      .route("/", web::get().to(controller::health))
+      .route("/graphiql", web::get().to(controller::graphiql))
   })
   .bind("0.0.0.0:8000")?
   .run()
