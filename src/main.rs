@@ -1,9 +1,15 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
-#[macro_use] extern crate rocket;
-
 mod controller;
 
-fn main() {
-    rocket::ignite().mount("/", routes![controller::index::index]).launch();
+use actix_web::{web, App, HttpServer};
+
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
+  HttpServer::new(|| {
+    App::new()
+      .route("/", web::get().to(controller::health))
+      .route("/graphiql", web::get().to(controller::graphiql))
+  })
+  .bind("0.0.0.0:8000")?
+  .run()
+  .await
 }
