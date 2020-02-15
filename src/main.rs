@@ -4,10 +4,14 @@ use actix_web::{web, App, HttpServer};
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-  HttpServer::new(|| {
+  let schema = std::sync::Arc::new(controller::schema::create_schema());
+
+  HttpServer::new(move || {
     App::new()
+      .data(schema.clone())
       .route("/", web::get().to(controller::health))
       .route("/graphiql", web::get().to(controller::graphiql))
+      .route("/graphql", web::post().to(controller::graphql))
   })
   .bind("0.0.0.0:8000")?
   .run()
