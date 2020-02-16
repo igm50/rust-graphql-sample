@@ -1,12 +1,9 @@
-pub mod schema;
-
-use std::sync::Arc;
-
 use actix_web::{web, Error, HttpResponse};
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
+use std::sync::Arc;
 
-use schema::Schema;
+use crate::schema::Schema;
 
 pub async fn health() -> HttpResponse {
   HttpResponse::Ok().content_type("plain/text").body("Ok.")

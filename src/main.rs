@@ -1,10 +1,11 @@
 mod controller;
+mod schema;
 
 use actix_web::{web, App, HttpServer};
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-  let schema = std::sync::Arc::new(controller::schema::create_schema());
+  let schema = std::sync::Arc::new(schema::create_schema());
 
   HttpServer::new(move || {
     App::new()
