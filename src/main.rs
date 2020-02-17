@@ -1,4 +1,5 @@
 mod controller;
+mod entity;
 mod schema;
 
 use actix_web::{web, App, HttpServer};
