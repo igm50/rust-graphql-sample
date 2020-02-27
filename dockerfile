@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 RUN USER=root cargo init --bin
 
 ENV CARGO_TARGET_DIR=/tmp/target
+ENV RUST_BACKTRACE=1
 
 COPY ./Cargo.toml Cargo.toml
 COPY ./Cargo.lock Cargo.lock
