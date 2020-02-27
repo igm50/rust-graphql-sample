@@ -1,4 +1,3 @@
-use juniper::graphql_object;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -12,12 +11,23 @@ impl ToDo {
     ToDo { id: id, text: text }
   }
 
-  pub fn id(&self) -> Uuid {
-    self.id
+  pub fn id(&self) -> String {
+    self.id.to_string()
   }
 
-  pub fn text(&self) -> String {
-    self.text.clone()
+  pub fn text(&self) -> &String {
+    &self.text
+  }
+}
+
+#[juniper::object]
+impl ToDo {
+  fn id(&self) -> String {
+    self.id()
+  }
+
+  fn text(&self) -> &String {
+    self.text()
   }
 }
 
@@ -26,18 +36,6 @@ impl PartialEq for ToDo {
     self.id == other.id
   }
 }
-
-graphql_object!(ToDo: () |&self| {
-  description: "Task to do."
-
-  field id() -> String {
-    self.id.to_string()
-  }
-
-  field text() -> &String {
-    &self.text
-  }
-});
 
 pub trait Repository<E> {
   fn create(&self, todo: ToDo) -> Result<ToDo, E>;
@@ -72,8 +70,8 @@ mod test {
       text: String::from("sample"),
     };
 
-    assert_eq!(todo.text(), "sample");
-    assert_ne!(todo.text(), "not equal");
+    assert_eq!(todo.text(), &String::from("sample"));
+    assert_ne!(todo.text(), &String::from("not equal"));
   }
 
   #[test]
