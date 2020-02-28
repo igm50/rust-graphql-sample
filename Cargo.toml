@@ -10,7 +10,7 @@ edition = "2018"
 actix-web = "2.0.0"
 actix-rt = "1.0.0"
 http = "0.2.0"
-uuid = "0.8.1"
+uuid = {version = "0.8.1", features=["v4"]}
 juniper = "0.14.2"
 mysql = "17.0.0"
 serde = "1.0.104"

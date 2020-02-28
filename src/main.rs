@@ -1,8 +1,10 @@
 mod controller;
 mod entity;
+mod repository;
 mod schema;
 
 use actix_web::{web, App, HttpServer};
+use std::sync::Arc;
 
 fn config(cfg: &mut web::ServiceConfig) {
   cfg
@@ -13,7 +15,8 @@ fn config(cfg: &mut web::ServiceConfig) {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-  let schema = std::sync::Arc::new(schema::create_schema());
+  let repository = Arc::new(repository::Connection::new());
+  let schema = Arc::new(schema::create_schema(repository.clone()));
 
   HttpServer::new(move || App::new().data(schema.clone()).configure(config))
     .bind("0.0.0.0:8000")?

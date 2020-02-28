@@ -1,42 +1,63 @@
-use juniper::FieldResult;
-use juniper::RootNode;
+use juniper::{FieldError, FieldResult, RootNode, Value};
+use std::error::Error;
+use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::entity::todo::ToDo;
+use crate::entity::todo::{Repository, ToDo};
 
-pub struct QueryRoot;
-pub struct MutationRoot;
-
-#[juniper::object]
-impl QueryRoot {
-  fn todos() -> FieldResult<Vec<ToDo>> {
-    let result = vec![
-      ToDo::new(
-        Uuid::parse_str("87103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
-        String::from("sample A"),
-      ),
-      ToDo::new(
-        Uuid::parse_str("97103fab-2e50-46b7-1c03-1938362b0809").unwrap(),
-        String::from("sample B"),
-      ),
-    ];
-
-    Ok(result)
-  }
-
-  fn todo(text: String) -> FieldResult<ToDo> {
-    Ok(ToDo::new(
-      Uuid::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
-      text,
-    ))
-  }
+pub struct QueryRoot<E>
+where
+  E: Error,
+{
+  repository: Arc<dyn Repository<E>>,
 }
 
 #[juniper::object]
-impl MutationRoot {}
+impl<E> QueryRoot<E>
+where
+  E: Error,
+{
+  fn todos(&self) -> FieldResult<Vec<ToDo>> {
+    match self.repository.list() {
+      Ok(todos) => Ok(todos),
+      Err(e) => Err(FieldError::new(String::from(e.description()), Value::Null)),
+    }
+  }
+}
 
-pub type Schema = RootNode<'static, QueryRoot, MutationRoot>;
+pub struct MutationRoot<E>
+where
+  E: Error,
+{
+  repository: Arc<dyn Repository<E>>,
+}
 
-pub fn create_schema() -> Schema {
-  Schema::new(QueryRoot {}, MutationRoot {})
+#[juniper::object]
+impl<E> MutationRoot<E>
+where
+  E: Error,
+{
+  fn register(&self, text: String) -> FieldResult<ToDo> {
+    let todo = ToDo::new_random_id(text);
+    match self.repository.create(todo) {
+      Ok(todo) => Ok(todo),
+      Err(e) => Err(FieldError::new(String::from(e.description()), Value::Null)),
+    }
+  }
+}
+
+pub type Schema<E> = RootNode<'static, QueryRoot<E>, MutationRoot<E>>;
+
+pub fn create_schema<E>(repository: Arc<dyn Repository<E>>) -> Schema<E>
+where
+  E: Error,
+{
+  Schema::new(
+    QueryRoot::<E> {
+      repository: repository.clone(),
+    },
+    MutationRoot::<E> {
+      repository: repository.clone(),
+    },
+  )
 }

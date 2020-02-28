@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::marker::{Send, Sync};
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -11,8 +13,15 @@ impl ToDo {
     ToDo { id: id, text: text }
   }
 
+  pub fn new_random_id(text: String) -> ToDo {
+    ToDo {
+      id: Uuid::new_v4(),
+      text,
+    }
+  }
+
   pub fn id(&self) -> String {
-    self.id.to_string()
+    self.id.to_simple().to_string()
   }
 
   pub fn text(&self) -> &String {
@@ -37,7 +46,11 @@ impl PartialEq for ToDo {
   }
 }
 
-pub trait Repository<E> {
+pub trait Repository<E>: Sync + Send
+where
+  E: Error,
+{
+  fn list(&self) -> Result<Vec<ToDo>, E>;
   fn create(&self, todo: ToDo) -> Result<ToDo, E>;
 }
 
@@ -53,14 +66,8 @@ mod test {
       text: String::from("sample"),
     };
 
-    assert_eq!(
-      todo.id().to_string(),
-      "97103fab-1e50-36b7-0c03-0938362b0809"
-    );
-    assert_ne!(
-      todo.id().to_string(),
-      "aaaaaaaa-1e50-36b7-0c03-0938362b0809"
-    );
+    assert_eq!(todo.id(), "97103fab1e5036b70c030938362b0809");
+    assert_ne!(todo.id(), "97103fab-1e50-36b7-0c03-0938362b0809");
   }
 
   #[test]
