@@ -28,13 +28,13 @@ impl Connection {
       .prep_exec(r"DROP TABLE IF EXISTS todo.todos", ())
       .unwrap();
 
-    // todo: created_atカラムの追加
     self
       .pool
       .prep_exec(
         r"CREATE TABLE todo.todos (
             id BINARY(32) NOT NULL,
             text VARCHAR(1000) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
           )",
         (),
@@ -49,7 +49,7 @@ impl Repository<Error> for Connection {
   fn list(&self) -> Result<Vec<ToDo>, Error> {
     let mut stmt = self
       .pool
-      .prepare(r"SELECT id, text FROM todo.todos ORDER BY id")
+      .prepare(r"SELECT id, text FROM todo.todos ORDER BY created_at, id")
       .unwrap();
 
     let mut result = Vec::new();
