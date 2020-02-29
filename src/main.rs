@@ -17,6 +17,7 @@ fn config(cfg: &mut web::ServiceConfig) {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
   let repository = Arc::new(repository::Connection::new());
+  repository.init_table();
   let schema = Arc::new(schema::create_schema(repository.clone()));
 
   HttpServer::new(move || App::new().data(schema.clone()).configure(config))
