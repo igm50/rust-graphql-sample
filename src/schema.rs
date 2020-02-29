@@ -1,7 +1,6 @@
 use juniper::{FieldError, FieldResult, RootNode, Value};
 use std::error::Error;
 use std::sync::Arc;
-use uuid::Uuid;
 
 use crate::entity::todo::{Repository, ToDo};
 
