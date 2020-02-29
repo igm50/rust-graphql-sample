@@ -3,18 +3,18 @@ use std::marker::{Send, Sync};
 use uuid::Uuid;
 
 #[derive(Debug)]
-pub struct ToDo {
+pub struct Todo {
   id: Uuid,
   text: String,
 }
 
-impl ToDo {
-  pub fn new(id: Uuid, text: String) -> ToDo {
-    ToDo { id: id, text: text }
+impl Todo {
+  pub fn new(id: Uuid, text: String) -> Todo {
+    Todo { id: id, text: text }
   }
 
-  pub fn new_random_id(text: String) -> ToDo {
-    ToDo {
+  pub fn new_random_id(text: String) -> Todo {
+    Todo {
       id: Uuid::new_v4(),
       text,
     }
@@ -29,7 +29,7 @@ impl ToDo {
   }
 }
 
-impl PartialEq for ToDo {
+impl PartialEq for Todo {
   fn eq(&self, other: &Self) -> bool {
     self.id == other.id
   }
@@ -39,8 +39,8 @@ pub trait Repository<E>: Sync + Send
 where
   E: Error,
 {
-  fn list(&self) -> Result<Vec<ToDo>, E>;
-  fn create(&self, todo: ToDo) -> Result<ToDo, E>;
+  fn list(&self) -> Result<Vec<Todo>, E>;
+  fn create(&self, todo: Todo) -> Result<Todo, E>;
 }
 
 #[cfg(test)]
@@ -50,7 +50,7 @@ mod test {
 
   #[test]
   fn test_id() {
-    let todo = ToDo {
+    let todo = Todo {
       id: Uuid::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
       text: String::from("sample"),
     };
@@ -61,7 +61,7 @@ mod test {
 
   #[test]
   fn test_text() {
-    let todo = ToDo {
+    let todo = Todo {
       id: Uuid::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
       text: String::from("sample"),
     };
@@ -75,22 +75,22 @@ mod test {
     let id = Uuid::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap();
 
     assert_eq!(
-      ToDo {
+      Todo {
         id: id,
         text: String::from("one")
       },
-      ToDo {
+      Todo {
         id: id,
         text: String::from("other")
       }
     );
 
     assert_ne!(
-      ToDo {
+      Todo {
         id: id,
         text: String::from("one")
       },
-      ToDo {
+      Todo {
         id: Uuid::parse_str("aaaaaaaa-1e50-36b7-0c03-0938362b0809").unwrap(),
         text: String::from("one")
       }

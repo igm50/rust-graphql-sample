@@ -1,7 +1,7 @@
-use crate::entity::todo::ToDo;
+use crate::entity::todo::Todo;
 
 #[juniper::object]
-impl ToDo {
+impl Todo {
   fn id(&self) -> String {
     self.id()
   }

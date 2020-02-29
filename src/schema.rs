@@ -2,7 +2,7 @@ use juniper::{FieldError, FieldResult, RootNode, Value};
 use std::error::Error;
 use std::sync::Arc;
 
-use crate::entity::todo::{Repository, ToDo};
+use crate::entity::todo::{Repository, Todo};
 
 pub struct QueryRoot<E>
 where
@@ -16,7 +16,7 @@ impl<E> QueryRoot<E>
 where
   E: Error,
 {
-  fn todos(&self) -> FieldResult<Vec<ToDo>> {
+  fn todos(&self) -> FieldResult<Vec<Todo>> {
     match self.repository.list() {
       Ok(todos) => Ok(todos),
       Err(e) => Err(FieldError::new(String::from(e.description()), Value::Null)),
@@ -36,8 +36,8 @@ impl<E> MutationRoot<E>
 where
   E: Error,
 {
-  fn register(&self, text: String) -> FieldResult<ToDo> {
-    let todo = ToDo::new_random_id(text);
+  fn register(&self, text: String) -> FieldResult<Todo> {
+    let todo = Todo::new_random_id(text);
     match self.repository.create(todo) {
       Ok(todo) => Ok(todo),
       Err(e) => Err(FieldError::new(String::from(e.description()), Value::Null)),

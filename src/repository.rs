@@ -1,7 +1,7 @@
 use mysql::{error::Error, from_row};
 use uuid::Uuid;
 
-use crate::entity::todo::{Repository, ToDo};
+use crate::entity::todo::{Repository, Todo};
 
 pub struct Connection {
   pool: mysql::Pool,
@@ -46,7 +46,7 @@ impl Connection {
 impl juniper::Context for Connection {}
 
 impl Repository<Error> for Connection {
-  fn list(&self) -> Result<Vec<ToDo>, Error> {
+  fn list(&self) -> Result<Vec<Todo>, Error> {
     let mut stmt = self
       .pool
       .prepare(r"SELECT id, text FROM todo.todos ORDER BY created_at, id")
@@ -55,13 +55,13 @@ impl Repository<Error> for Connection {
     let mut result = Vec::new();
     for row in stmt.execute(()).unwrap() {
       let (id, text) = from_row::<(String, String)>(row.unwrap());
-      result.push(ToDo::new(Uuid::parse_str(id.as_str()).unwrap(), text));
+      result.push(Todo::new(Uuid::parse_str(id.as_str()).unwrap(), text));
     }
 
     Ok(result)
   }
 
-  fn create(&self, todo: ToDo) -> Result<ToDo, Error> {
+  fn create(&self, todo: Todo) -> Result<Todo, Error> {
     let mut stmt = self
       .pool
       .prepare(r"INSERT INTO todo.todos (id, text) VALUES (?, ?)")
