@@ -64,6 +64,29 @@ impl Repository<Error> for Connection {
     }
   }
 
+  fn fetch(&self, id: Uuid) -> Result<Todo, Error> {
+    let mut stmt = self
+      .pool
+      .prepare(r"SELECT id, text FROM todo.todos WHERE id = ?")
+      .unwrap();
+
+    Ok(Todo::new_random_id(String::from("test")))
+    // let rows_result = stmt.execute((id.));
+
+    // match rows_result {
+    //   Err(e) => Err(e),
+    //   Ok(rows) => {
+    //     let mut todos = Vec::new();
+    //     for row in rows {
+    //       let (id, text) = from_row::<(String, String)>(row.unwrap());
+    //       todos.push(Todo::new(Uuid::parse_str(id.as_str()).unwrap(), text));
+    //     }
+
+    //     Ok(todos)
+    //   }
+    // }
+  }
+
   fn create(&self, todo: Todo) -> Result<Todo, Error> {
     let mut stmt = self
       .pool

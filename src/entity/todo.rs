@@ -1,6 +1,18 @@
-use std::error::Error;
 use std::marker::{Send, Sync};
 use uuid::Uuid;
+use std::sync::Arc;
+
+pub struct TodoId(Uuid);
+
+impl TodoId {
+  pub fn parse_str(input: &str) -> Result<TodoId, Error> {
+    let id = Uuid::parse_str(input);
+    match id {
+      Ok(id) => Ok(TodoId(id)),
+      Err(e) => Err(Error::new(e)),
+    }
+  }
+}
 
 #[derive(Debug)]
 pub struct Todo {
@@ -35,11 +47,24 @@ impl PartialEq for Todo {
   }
 }
 
+pub struct Error (Arc<dyn std::error::Error>);
+
+impl Error {
+  fn new(err: dyn std::error::Error) -> Error {
+    Error(err)
+  }
+}
+
+impl std::error::Error for Error {
+  pub
+}
+
 pub trait Repository<E>: Sync + Send
 where
-  E: Error,
+  E: std::error::Error,
 {
   fn list(&self) -> Result<Vec<Todo>, E>;
+  fn fetch(&self, id: Uuid) -> Result<Todo, E>;
   fn create(&self, todo: Todo) -> Result<Todo, E>;
 }
 
@@ -47,6 +72,18 @@ where
 mod test {
   use super::*;
   use uuid::Uuid;
+
+  mod id {
+    #[test]
+    fn test_create() {
+      assert_eq!(
+        TodoId::parse_str("97103fab-1e50-36b7-0c03-0938362b0809"),
+        Ok
+      );
+
+      assert_ne!(TodoId::parse_str("invalid_strings"), Err);
+    }
+  }
 
   #[test]
   fn test_id() {
