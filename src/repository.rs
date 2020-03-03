@@ -1,5 +1,4 @@
 use mysql::{error::Error, from_row};
-use uuid::Uuid;
 
 use crate::entity::todo::{Repository, Todo};
 
@@ -56,7 +55,7 @@ impl Repository<Error> for Connection {
         let mut todos = Vec::new();
         for row in rows {
           let (id, text) = from_row::<(String, String)>(row.unwrap());
-          todos.push(Todo::new(Uuid::parse_str(id.as_str()).unwrap(), text));
+          todos.push(Todo::try_parse(id, text).unwrap());
         }
 
         Ok(todos)
