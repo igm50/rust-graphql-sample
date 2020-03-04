@@ -60,22 +60,17 @@ impl Repository for Connection {
   }
 
   fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError> {
-    let mut stmt = self
-      .pool
-      .prepare(r"SELECT id, text FROM todo.todos WHERE id = ?")
-      .unwrap();
+    let row = self.pool.first_exec(
+      r"SELECT id, text FROM todo.todos WHERE id = ?",
+      (id.to_string(),),
+    )?;
 
-    let rows = stmt.execute((id.to_string(),))?;
-
-    let mut todos = Vec::new();
-    for row in rows {
-      let (id, text) = from_row::<(String, String)>(row.unwrap());
-      todos.push(Todo::try_parse(id.as_str(), text.as_str()).unwrap());
-    }
-
-    match todos.len() {
-      1 => Ok(todos[0].clone()),
-      _ => Err(Box::new(Error::NotFound)),
+    match row {
+      None => Err(Box::new(Error::NotFound)),
+      Some(r) => {
+        let (id, text) = from_row::<(String, String)>(r);
+        Ok(Todo::try_parse(id.as_str(), text.as_str()).unwrap())
+      }
     }
   }
 
