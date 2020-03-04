@@ -1,21 +1,10 @@
 use juniper::{FieldError, FieldResult, RootNode, Value};
 use std::sync::Arc;
 
+mod query;
+
 use crate::entity::todo::{Repository, Todo};
-
-pub struct QueryRoot {
-  repository: Arc<dyn Repository>,
-}
-
-#[juniper::object]
-impl QueryRoot {
-  fn todos(&self) -> FieldResult<Vec<Todo>> {
-    match self.repository.list() {
-      Ok(todos) => Ok(todos),
-      Err(e) => Err(FieldError::new(String::from(e.description()), Value::Null)),
-    }
-  }
-}
+use query::Query;
 
 pub struct MutationRoot {
   repository: Arc<dyn Repository>,
@@ -32,13 +21,11 @@ impl MutationRoot {
   }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, MutationRoot>;
+pub type Schema = RootNode<'static, Query, MutationRoot>;
 
 pub fn create_schema(repository: Arc<dyn Repository>) -> Schema {
   Schema::new(
-    QueryRoot {
-      repository: repository.clone(),
-    },
+    Query::new(repository.clone()),
     MutationRoot {
       repository: repository.clone(),
     },

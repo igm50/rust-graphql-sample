@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::entity::todo::Error;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TodoId(Uuid);
 
 impl TodoId {

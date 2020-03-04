@@ -6,7 +6,7 @@ pub mod id;
 pub use error::Error;
 pub use id::TodoId;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Todo {
   id: TodoId,
   text: String,
@@ -49,6 +49,7 @@ impl PartialEq for Todo {
 
 pub trait Repository: Sync + Send {
   fn list(&self) -> Result<Vec<Todo>, Box<dyn std::error::Error>>;
+  fn fetch(&self, id: TodoId) -> Result<Todo, Box<dyn std::error::Error>>;
   fn create(&self, todo: Todo) -> Result<Todo, Box<dyn std::error::Error>>;
 }
 
