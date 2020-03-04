@@ -1,4 +1,5 @@
-use mysql::{error::Error, from_row};
+use mysql::from_row;
+use std::error::Error;
 
 use crate::entity::todo::{Repository, Todo};
 
@@ -40,8 +41,8 @@ impl Connection {
 
 impl juniper::Context for Connection {}
 
-impl Repository<Error> for Connection {
-  fn list(&self) -> Result<Vec<Todo>, Error> {
+impl Repository for Connection {
+  fn list(&self) -> Result<Vec<Todo>, Box<dyn Error>> {
     let mut stmt = self
       .pool
       .prepare(r"SELECT id, text FROM todo.todos ORDER BY created_at, id")
@@ -50,7 +51,7 @@ impl Repository<Error> for Connection {
     let rows_result = stmt.execute(());
 
     match rows_result {
-      Err(e) => Err(e),
+      Err(e) => Err(Box::new(e)),
       Ok(rows) => {
         let mut todos = Vec::new();
         for row in rows {
@@ -63,7 +64,7 @@ impl Repository<Error> for Connection {
     }
   }
 
-  fn create(&self, todo: Todo) -> Result<Todo, Error> {
+  fn create(&self, todo: Todo) -> Result<Todo, Box<dyn Error>> {
     let mut stmt = self
       .pool
       .prepare(r"INSERT INTO todo.todos (id, text) VALUES (?, ?)")
@@ -73,7 +74,7 @@ impl Repository<Error> for Connection {
 
     match result {
       Ok(_t) => Ok(todo),
-      Err(e) => Err(e),
+      Err(e) => Err(Box::new(e)),
     }
   }
 }

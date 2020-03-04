@@ -47,12 +47,9 @@ impl PartialEq for Todo {
   }
 }
 
-pub trait Repository<E>: Sync + Send
-where
-  E: std::error::Error,
-{
-  fn list(&self) -> Result<Vec<Todo>, E>;
-  fn create(&self, todo: Todo) -> Result<Todo, E>;
+pub trait Repository: Sync + Send {
+  fn list(&self) -> Result<Vec<Todo>, Box<dyn std::error::Error>>;
+  fn create(&self, todo: Todo) -> Result<Todo, Box<dyn std::error::Error>>;
 }
 
 // tests

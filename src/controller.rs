@@ -17,7 +17,7 @@ pub async fn graphiql() -> HttpResponse {
 }
 
 pub async fn graphql(
-  st: web::Data<Arc<Schema<mysql::error::Error>>>,
+  st: web::Data<Arc<Schema>>,
   data: web::Json<GraphQLRequest>,
 ) -> Result<HttpResponse, Error> {
   let user = web::block(move || {
