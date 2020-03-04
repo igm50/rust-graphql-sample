@@ -1,4 +1,5 @@
-use mysql::from_row;
+use mysql::prelude::Queryable;
+use mysql::{from_row, PooledConn};
 
 mod error;
 
@@ -16,51 +17,40 @@ impl Connection {
     }
   }
 
-  pub fn init_table(&self) {
-    let pool = &self.pool;
+  pub fn conn(&self) -> mysql::Result<PooledConn> {
+    self.pool.get_conn()
+  }
 
-    pool
-      .prep_exec(r"CREATE SCHEMA IF NOT EXISTS todo", ())
-      .unwrap();
+  pub fn init_table(&self) -> mysql::Result<()> {
+    let mut conn = self.conn()?;
 
-    pool
-      .prep_exec(r"DROP TABLE IF EXISTS todo.todos", ())
-      .unwrap();
-
-    pool
-      .prep_exec(
-        r"CREATE TABLE todo.todos (
+    conn.query_drop(r"CREATE SCHEMA IF NOT EXISTS todo")?;
+    conn.query_drop(r"DROP TABLE IF EXISTS todo.todos")?;
+    conn.query_drop(
+      r"CREATE TABLE todo.todos (
             id BINARY(32) NOT NULL,
             text VARCHAR(1000) NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
           )",
-        (),
-      )
-      .unwrap();
+    )?;
+
+    Ok(())
   }
 }
 
 impl Repository for Connection {
   fn list(&self) -> Result<Vec<Todo>, BoxedError> {
-    let mut stmt = self
-      .pool
-      .prepare(r"SELECT id, text FROM todo.todos ORDER BY created_at, id")
-      .unwrap();
-
-    let rows = stmt.execute(())?;
-
-    let mut todos = Vec::new();
-    for row in rows {
-      let (id, text) = from_row::<(String, String)>(row.unwrap());
-      todos.push(Todo::try_parse(id.as_str(), text.as_str()).unwrap());
-    }
+    let todos = self.conn()?.query_map(
+      r"SELECT id, text FROM todo.todos ORDER BY created_at, id",
+      |(id, text): (String, String)| Todo::try_parse(id.as_str(), text.as_str()).unwrap(),
+    )?;
 
     Ok(todos)
   }
 
   fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError> {
-    let row = self.pool.first_exec(
+    let row = self.conn()?.exec_first(
       r"SELECT id, text FROM todo.todos WHERE id = ?",
       (id.to_string(),),
     )?;
@@ -75,22 +65,18 @@ impl Repository for Connection {
   }
 
   fn create(&self, todo: &Todo) -> Result<(), BoxedError> {
-    let mut stmt = self
-      .pool
-      .prepare(r"INSERT INTO todo.todos (id, text) VALUES (?, ?)")
-      .unwrap();
-
-    stmt.execute((todo.id(), todo.text()))?;
+    self.conn()?.exec_drop(
+      r"INSERT INTO todo.todos (id, text) VALUES (?, ?)",
+      (todo.id(), todo.text()),
+    )?;
 
     Ok(())
   }
 
   fn delete(&self, id: &TodoId) -> Result<(), BoxedError> {
     self
-      .pool
-      .prepare(r"DELETE FROM todo.todos WHERE id = ?")
-      .unwrap()
-      .execute((id.to_string(),))?;
+      .conn()?
+      .exec_drop(r"DELETE FROM todo.todos WHERE id = ?", (id.to_string(),))?;
 
     Ok(())
   }
