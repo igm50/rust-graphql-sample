@@ -73,6 +73,15 @@ impl Repository for Connection {
     Ok(())
   }
 
+  fn update(&self, todo: &Todo) -> Result<(), BoxedError> {
+    self.conn()?.exec_drop(
+      r"UPDATE todo.todos SET text = ? WHERE id = ?",
+      (todo.text(), todo.id()),
+    )?;
+
+    Ok(())
+  }
+
   fn delete(&self, id: &TodoId) -> Result<(), BoxedError> {
     self
       .conn()?

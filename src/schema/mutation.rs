@@ -23,6 +23,26 @@ impl Mutation {
     }
   }
 
+  fn update(&self, id: String, text: String) -> FieldResult<Todo> {
+    let op_todo = Todo::try_parse(id.as_str(), text.as_str());
+    let error = |description| {
+      Err(FieldError::new(
+        description,
+        graphql_value!({ "id": id, "text": text }),
+      ))
+    };
+
+    if let Err(e) = op_todo {
+      return error(&format!("{}", e));
+    }
+
+    let todo = op_todo.unwrap();
+    match self.repository.update(&todo) {
+      Ok(_) => Ok(todo),
+      Err(e) => error(&format!("{}", e)),
+    }
+  }
+
   fn delete(&self, id_str: String) -> FieldResult<TodoId> {
     let op_id = TodoId::parse_str(id_str.as_str());
     let error = |description| {
@@ -48,6 +68,10 @@ impl Mutation {
 impl Mutation {
   fn register(&self, text: String) -> FieldResult<Todo> {
     self.register(text)
+  }
+
+  fn update(&self, id: String, text: String) -> FieldResult<Todo> {
+    self.update(id, text)
   }
 
   fn delete(&self, id: String) -> FieldResult<TodoId> {

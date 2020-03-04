@@ -50,6 +50,7 @@ pub trait Repository: Sync + Send {
   fn list(&self) -> Result<Vec<Todo>, BoxedError>;
   fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError>;
   fn create(&self, todo: &Todo) -> Result<(), BoxedError>;
+  fn update(&self, todo: &Todo) -> Result<(), BoxedError>;
   fn delete(&self, id: &TodoId) -> Result<(), BoxedError>;
 }
 
