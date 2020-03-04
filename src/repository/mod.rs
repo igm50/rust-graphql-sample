@@ -2,7 +2,7 @@ use mysql::from_row;
 
 mod error;
 
-use crate::entity::todo::{Repository, Todo, TodoId};
+use crate::entity::todo::{BoxedError, Repository, Todo, TodoId};
 pub use error::Error;
 
 pub struct Connection {
@@ -41,10 +41,8 @@ impl Connection {
   }
 }
 
-impl juniper::Context for Connection {}
-
 impl Repository for Connection {
-  fn list(&self) -> Result<Vec<Todo>, Box<dyn std::error::Error>> {
+  fn list(&self) -> Result<Vec<Todo>, BoxedError> {
     let mut stmt = self
       .pool
       .prepare(r"SELECT id, text FROM todo.todos ORDER BY created_at, id")
@@ -55,13 +53,13 @@ impl Repository for Connection {
     let mut todos = Vec::new();
     for row in rows {
       let (id, text) = from_row::<(String, String)>(row.unwrap());
-      todos.push(Todo::try_parse(id, text).unwrap());
+      todos.push(Todo::try_parse(id.as_str(), text.as_str()).unwrap());
     }
 
     Ok(todos)
   }
 
-  fn fetch(&self, id: TodoId) -> Result<Todo, Box<dyn std::error::Error>> {
+  fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError> {
     let mut stmt = self
       .pool
       .prepare(r"SELECT id, text FROM todo.todos WHERE id = ?")
@@ -72,7 +70,7 @@ impl Repository for Connection {
     let mut todos = Vec::new();
     for row in rows {
       let (id, text) = from_row::<(String, String)>(row.unwrap());
-      todos.push(Todo::try_parse(id, text).unwrap());
+      todos.push(Todo::try_parse(id.as_str(), text.as_str()).unwrap());
     }
 
     match todos.len() {
@@ -81,7 +79,7 @@ impl Repository for Connection {
     }
   }
 
-  fn create(&self, todo: Todo) -> Result<Todo, Box<dyn std::error::Error>> {
+  fn create(&self, todo: &Todo) -> Result<(), BoxedError> {
     let mut stmt = self
       .pool
       .prepare(r"INSERT INTO todo.todos (id, text) VALUES (?, ?)")
@@ -89,6 +87,16 @@ impl Repository for Connection {
 
     stmt.execute((todo.id(), todo.text()))?;
 
-    Ok(todo)
+    Ok(())
+  }
+
+  fn delete(&self, id: &TodoId) -> Result<(), BoxedError> {
+    self
+      .pool
+      .prepare(r"DELETE FROM todo.todos WHERE id = ?")
+      .unwrap()
+      .execute((id.to_string(),))?;
+
+    Ok(())
   }
 }

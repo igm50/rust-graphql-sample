@@ -32,7 +32,7 @@ impl Query {
       return error(&format!("{}", e));
     }
 
-    let result = self.repository.fetch(id.unwrap());
+    let result = self.repository.fetch(&id.unwrap());
     match result {
       Ok(todo) => Ok(todo),
       Err(e) => error(&format!("{}", e)),
@@ -46,7 +46,7 @@ impl Query {
     self.todos()
   }
 
-  fn todo(&self, id_str: String) -> FieldResult<Todo> {
-    self.todo(id_str)
+  fn todo(&self, id: String) -> FieldResult<Todo> {
+    self.todo(id)
   }
 }

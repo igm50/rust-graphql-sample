@@ -1,33 +1,19 @@
-use juniper::{FieldError, FieldResult, RootNode, Value};
+use juniper::RootNode;
 use std::sync::Arc;
 
+mod mutation;
 mod query;
+mod todo;
 
-use crate::entity::todo::{Repository, Todo};
+use crate::entity::todo::Repository;
+use mutation::Mutation;
 use query::Query;
 
-pub struct MutationRoot {
-  repository: Arc<dyn Repository>,
-}
-
-#[juniper::object]
-impl MutationRoot {
-  fn register(&self, text: String) -> FieldResult<Todo> {
-    let todo = Todo::new_random_id(text);
-    match self.repository.create(todo) {
-      Ok(todo) => Ok(todo),
-      Err(e) => Err(FieldError::new(String::from(e.description()), Value::Null)),
-    }
-  }
-}
-
-pub type Schema = RootNode<'static, Query, MutationRoot>;
+pub type Schema = RootNode<'static, Query, Mutation>;
 
 pub fn create_schema(repository: Arc<dyn Repository>) -> Schema {
   Schema::new(
     Query::new(repository.clone()),
-    MutationRoot {
-      repository: repository.clone(),
-    },
+    Mutation::new(repository.clone()),
   )
 }

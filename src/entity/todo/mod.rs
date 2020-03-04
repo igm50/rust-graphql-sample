@@ -13,23 +13,20 @@ pub struct Todo {
 }
 
 impl Todo {
-  pub fn new(id: TodoId, text: String) -> Self {
-    Self { id: id, text: text }
-  }
-
-  pub fn new_random_id(text: String) -> Self {
+  pub fn new(id: TodoId, text: &str) -> Self {
     Self {
-      id: TodoId::new_random(),
-      text,
+      id: id,
+      text: String::from(text),
     }
   }
 
-  pub fn try_parse(id_str: String, text: String) -> Result<Self, Error> {
-    let id = TodoId::parse_str(id_str.as_str());
-    match id {
-      Ok(id) => Ok(Self::new(id, text)),
-      Err(e) => Err(e),
-    }
+  pub fn new_random_id(text: &str) -> Self {
+    Self::new(TodoId::new_random(), text)
+  }
+
+  pub fn try_parse(id_str: &str, text: &str) -> Result<Self, Error> {
+    let id = TodoId::parse_str(id_str)?;
+    Ok(Self::new(id, text))
   }
 
   pub fn id(&self) -> String {
@@ -47,10 +44,13 @@ impl PartialEq for Todo {
   }
 }
 
+pub type BoxedError = Box<dyn std::error::Error>;
+
 pub trait Repository: Sync + Send {
-  fn list(&self) -> Result<Vec<Todo>, Box<dyn std::error::Error>>;
-  fn fetch(&self, id: TodoId) -> Result<Todo, Box<dyn std::error::Error>>;
-  fn create(&self, todo: Todo) -> Result<Todo, Box<dyn std::error::Error>>;
+  fn list(&self) -> Result<Vec<Todo>, BoxedError>;
+  fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError>;
+  fn create(&self, todo: &Todo) -> Result<(), BoxedError>;
+  fn delete(&self, id: &TodoId) -> Result<(), BoxedError>;
 }
 
 // tests
@@ -60,12 +60,8 @@ mod test {
 
   #[test]
   fn test_try_parse() {
-    assert!(Todo::try_parse(
-      String::from("97103fab-1e50-36b7-0c03-0938362b0809"),
-      String::from("sample")
-    )
-    .is_ok());
-    assert!(Todo::try_parse(String::from("invalid"), String::from("sample")).is_err())
+    assert!(Todo::try_parse("97103fab-1e50-36b7-0c03-0938362b0809", "sample").is_ok());
+    assert!(Todo::try_parse("invalid", "sample").is_err());
   }
 
   #[test]
