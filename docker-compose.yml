@@ -12,6 +12,7 @@ services:
   app:
     build: .
     tty: true
+    restart: always
     ports:
       - 8000:8000
     volumes:
