@@ -6,7 +6,7 @@ pub mod id;
 pub use error::Error;
 pub use id::TodoId;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Todo {
   id: TodoId,
   text: String,
@@ -35,12 +35,6 @@ impl Todo {
 
   pub fn text(&self) -> &String {
     &self.text
-  }
-}
-
-impl PartialEq for Todo {
-  fn eq(&self, other: &Self) -> bool {
-    self.id == other.id
   }
 }
 
@@ -94,11 +88,11 @@ mod test {
     assert_eq!(
       Todo {
         id: id.clone(),
-        text: String::from("one")
+        text: String::from("equals")
       },
       Todo {
         id: id.clone(),
-        text: String::from("other")
+        text: String::from("equals")
       }
     );
 
@@ -108,8 +102,19 @@ mod test {
         text: String::from("one")
       },
       Todo {
+        id: id.clone(),
+        text: String::from("another")
+      }
+    );
+
+    assert_ne!(
+      Todo {
+        id: id.clone(),
+        text: String::from("equals")
+      },
+      Todo {
         id: TodoId::parse_str("aaaaaaaa-1e50-36b7-0c03-0938362b0809").unwrap(),
-        text: String::from("one")
+        text: String::from("equals")
       }
     );
   }
