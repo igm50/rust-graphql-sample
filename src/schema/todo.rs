@@ -9,6 +9,10 @@ impl Todo {
   fn text(&self) -> &String {
     self.text()
   }
+
+  fn created_at(&self) -> String {
+    format!("{}", self.created_at())
+  }
 }
 
 #[juniper::object]

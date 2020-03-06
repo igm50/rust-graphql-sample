@@ -1,3 +1,4 @@
+use chrono::prelude::{Local, NaiveDateTime};
 use std::marker::{Send, Sync};
 
 pub mod error;
@@ -10,23 +11,24 @@ pub use id::TodoId;
 pub struct Todo {
   id: TodoId,
   text: String,
+  created_at: NaiveDateTime,
 }
 
 impl Todo {
-  pub fn new(id: TodoId, text: &str) -> Self {
+  pub fn new(id: TodoId, text: &str, created_at: NaiveDateTime) -> Self {
     Self {
-      id: id,
+      id,
       text: String::from(text),
+      created_at,
     }
   }
 
   pub fn new_random_id(text: &str) -> Self {
-    Self::new(TodoId::new_random(), text)
+    Self::new(TodoId::new_random(), text, Local::now().naive_local())
   }
 
-  pub fn try_parse(id_str: &str, text: &str) -> Result<Self, Error> {
-    let id = TodoId::parse_str(id_str)?;
-    Ok(Self::new(id, text))
+  pub fn try_parse(id_str: &str, text: &str, created_at: NaiveDateTime) -> Result<Self, Error> {
+    Ok(Self::new(TodoId::parse_str(id_str)?, text, created_at))
   }
 
   pub fn id(&self) -> String {
@@ -36,6 +38,10 @@ impl Todo {
   pub fn text(&self) -> &String {
     &self.text
   }
+
+  pub fn created_at(&self) -> &NaiveDateTime {
+    &self.created_at
+  }
 }
 
 pub type BoxedError = Box<dyn std::error::Error>;
@@ -44,7 +50,7 @@ pub trait Repository: Sync + Send {
   fn list(&self) -> Result<Vec<Todo>, BoxedError>;
   fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError>;
   fn create(&self, todo: &Todo) -> Result<(), BoxedError>;
-  fn update(&self, todo: &Todo) -> Result<(), BoxedError>;
+  fn update(&self, id: &TodoId, text: &str) -> Result<Todo, BoxedError>;
   fn delete(&self, id: &TodoId) -> Result<(), BoxedError>;
 }
 
@@ -52,11 +58,16 @@ pub trait Repository: Sync + Send {
 #[cfg(test)]
 mod test {
   use super::*;
+  use chrono::NaiveDate;
 
   #[test]
   fn test_try_parse() {
-    assert!(Todo::try_parse("97103fab-1e50-36b7-0c03-0938362b0809", "sample").is_ok());
-    assert!(Todo::try_parse("invalid", "sample").is_err());
+    let try_parse = |id| Todo::try_parse(id, "sample", Local::now().naive_local());
+
+    assert!(try_parse("97103fab1e5036b70c030938362b0809").is_ok());
+    assert!(try_parse("97103fab-1e50-36b7-0c03-0938362b0809").is_ok());
+
+    assert!(try_parse("invalid").is_err());
   }
 
   #[test]
@@ -64,6 +75,7 @@ mod test {
     let todo = Todo {
       id: TodoId::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
       text: String::from("sample"),
+      created_at: Local::now().naive_local(),
     };
 
     assert_eq!(todo.id(), "97103fab1e5036b70c030938362b0809");
@@ -75,6 +87,7 @@ mod test {
     let todo = Todo {
       id: TodoId::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
       text: String::from("sample"),
+      created_at: Local::now().naive_local(),
     };
 
     assert_eq!(todo.text(), &String::from("sample"));
@@ -82,40 +95,47 @@ mod test {
   }
 
   #[test]
-  fn test_partial_eq() {
-    let id = TodoId::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap();
+  fn test_created_at() {
+    let todo = Todo {
+      id: TodoId::parse_str("97103fab-1e50-36b7-0c03-0938362b0809").unwrap(),
+      text: String::from("sample"),
+      created_at: NaiveDate::from_ymd(2020, 4, 1).and_hms(12, 10, 30),
+    };
 
     assert_eq!(
-      Todo {
-        id: id.clone(),
-        text: String::from("equals")
-      },
-      Todo {
-        id: id.clone(),
-        text: String::from("equals")
-      }
+      todo.created_at(),
+      &NaiveDate::from_ymd(2020, 4, 1).and_hms(12, 10, 30)
+    );
+    assert_ne!(
+      todo.created_at(),
+      &NaiveDate::from_ymd(2019, 5, 10).and_hms(1, 20, 5)
+    );
+  }
+
+  #[test]
+  fn test_partial_eq() {
+    let new = |(id, text, y, m, d): (&str, &str, i32, u32, u32)| Todo {
+      id: TodoId::parse_str(id).unwrap(),
+      text: String::from(text),
+      created_at: NaiveDate::from_ymd(y, m, d).and_hms(12, 10, 30),
+    };
+
+    assert_eq!(
+      new(("97103fab-1e50-36b7-0c03-0938362b0809", "A", 2020, 4, 1)),
+      new(("97103fab-1e50-36b7-0c03-0938362b0809", "A", 2020, 4, 1)),
     );
 
     assert_ne!(
-      Todo {
-        id: id.clone(),
-        text: String::from("one")
-      },
-      Todo {
-        id: id.clone(),
-        text: String::from("another")
-      }
+      new(("97103fab-1e50-36b7-0c03-0938362b0809", "A", 2020, 4, 1)),
+      new(("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "A", 2020, 4, 1)),
     );
-
     assert_ne!(
-      Todo {
-        id: id.clone(),
-        text: String::from("equals")
-      },
-      Todo {
-        id: TodoId::parse_str("aaaaaaaa-1e50-36b7-0c03-0938362b0809").unwrap(),
-        text: String::from("equals")
-      }
+      new(("97103fab-1e50-36b7-0c03-0938362b0809", "A", 2020, 4, 1)),
+      new(("97103fab-1e50-36b7-0c03-0938362b0809", "B", 2020, 4, 1)),
+    );
+    assert_ne!(
+      new(("97103fab-1e50-36b7-0c03-0938362b0809", "A", 2020, 4, 1)),
+      new(("aaaaaaaa-1e50-36b7-0c03-0938362b0809", "A", 2019, 5, 8)),
     );
   }
 }

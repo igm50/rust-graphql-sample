@@ -23,43 +23,49 @@ impl Mutation {
     }
   }
 
-  fn update(&self, id: String, text: String) -> FieldResult<Todo> {
-    let op_todo = Todo::try_parse(id.as_str(), text.as_str());
-    let error = |description| {
+  fn update(&self, id_str: String, text: String) -> FieldResult<Todo> {
+    // エラー時の挙動
+    let error = |description, id_str, text| {
       Err(FieldError::new(
         description,
-        graphql_value!({ "id": id, "text": text }),
+        graphql_value!({ "id": id_str, "text": text }),
       ))
     };
 
-    if let Err(e) = op_todo {
-      return error(&format!("{}", e));
+    // ID文字列を型変換
+    let op_id = TodoId::parse_str(id_str.as_str());
+    if let Err(e) = op_id {
+      return error(&format!("{}", e), id_str, text);
     }
 
-    let todo = op_todo.unwrap();
-    match self.repository.update(&todo) {
-      Ok(_) => Ok(todo),
-      Err(e) => error(&format!("{}", e)),
+    // UPDATE実行
+    let id = op_id.unwrap();
+    match self.repository.update(&id, text.as_str()) {
+      Ok(todo) => Ok(todo),
+      Err(e) => error(&format!("{}", e), id_str, text),
     }
   }
 
   fn delete(&self, id_str: String) -> FieldResult<TodoId> {
-    let op_id = TodoId::parse_str(id_str.as_str());
-    let error = |description| {
+    // エラー時の挙動
+    let error = |description, id_str| {
       Err(FieldError::new(
         description,
         graphql_value!({ "id": id_str }),
       ))
     };
 
+    // ID文字列を型変換
+    let op_id = TodoId::parse_str(id_str.as_str());
     if let Err(e) = op_id {
-      return error(&format!("{}", e));
+      return error(&format!("{}", e), id_str);
     }
 
+    // UPDATE実行
     let id = op_id.unwrap();
     match self.repository.delete(&id) {
       Ok(_) => Ok(id),
-      Err(e) => error(&format!("{}", e)),
+      Err(e) => error(&format!("{}", e), id_str),
     }
   }
 }

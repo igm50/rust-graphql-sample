@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use mysql::prelude::Queryable;
 use mysql::{from_row, PooledConn};
 
@@ -42,8 +43,10 @@ impl Connection {
 impl Repository for Connection {
   fn list(&self) -> Result<Vec<Todo>, BoxedError> {
     let todos = self.conn()?.query_map(
-      r"SELECT id, text FROM todo.todos ORDER BY created_at, id",
-      |(id, text): (String, String)| Todo::try_parse(id.as_str(), text.as_str()).unwrap(),
+      r"SELECT id, text, created_at FROM todo.todos ORDER BY created_at, id",
+      |(id, text, created_at): (String, String, NaiveDateTime)| {
+        Todo::try_parse(id.as_str(), text.as_str(), created_at).unwrap()
+      },
     )?;
 
     Ok(todos)
@@ -51,35 +54,35 @@ impl Repository for Connection {
 
   fn fetch(&self, id: &TodoId) -> Result<Todo, BoxedError> {
     let row = self.conn()?.exec_first(
-      r"SELECT id, text FROM todo.todos WHERE id = ?",
+      r"SELECT id, text, created_at FROM todo.todos WHERE id = ?",
       (id.to_string(),),
     )?;
 
     match row {
       None => Err(Box::new(Error::NotFound)),
       Some(r) => {
-        let (id, text) = from_row::<(String, String)>(r);
-        Ok(Todo::try_parse(id.as_str(), text.as_str()).unwrap())
+        let (id, text, created_at) = from_row::<(String, String, NaiveDateTime)>(r);
+        Ok(Todo::try_parse(id.as_str(), text.as_str(), created_at).unwrap())
       }
     }
   }
 
   fn create(&self, todo: &Todo) -> Result<(), BoxedError> {
     self.conn()?.exec_drop(
-      r"INSERT INTO todo.todos (id, text) VALUES (?, ?)",
-      (todo.id(), todo.text()),
+      r"INSERT INTO todo.todos (id, text, created_at) VALUES (?, ?, ?)",
+      (todo.id(), todo.text(), todo.created_at()),
     )?;
 
     Ok(())
   }
 
-  fn update(&self, todo: &Todo) -> Result<(), BoxedError> {
+  fn update(&self, id: &TodoId, text: &str) -> Result<Todo, BoxedError> {
     self.conn()?.exec_drop(
       r"UPDATE todo.todos SET text = ? WHERE id = ?",
-      (todo.text(), todo.id()),
+      (text, id.to_string()),
     )?;
 
-    Ok(())
+    Ok(self.fetch(id)?)
   }
 
   fn delete(&self, id: &TodoId) -> Result<(), BoxedError> {
